@@ -36,7 +36,7 @@ import { getIncomingByLocation, isActiveMovement } from "@/lib/movement";
 import type { CameraFocus } from "@/lib/camera";
 import { isReturnPieceDamaged } from "@/lib/returns";
 
-interface WarehouseState {
+export interface WarehouseState {
   inventory: Inventory[];
   movements: InventoryMovement[];
   inboundTasks: InboundTask[];
@@ -149,6 +149,8 @@ interface WarehouseState {
   cancelMove: () => void;
   /** Membuat movement PENDING dari `movingInventoryId` ke location tujuan. */
   createMovement: (toLocationId: string) => void;
+  /** Membuat movement PENDING inventory ini ke location tujuan, tanpa lewat mode "pilih tujuan". */
+  queueMovement: (inventoryId: string, toLocationId: string) => void;
   startMovement: (id: string) => void;
   /** Pallet diangkat forklift: inventory keluar dari location asal (in transit). */
   pickUpMovement: (id: string) => void;
@@ -616,16 +618,19 @@ export const useWarehouseStore = create<WarehouseState>((set, get) => ({
   cancelMove: () => set({ movingInventoryId: null }),
 
   createMovement: (toLocationId) => {
-    const { inventory, movingInventoryId } = get();
-    const item = inventory.find((i) => i.id === movingInventoryId);
+    const { movingInventoryId, queueMovement } = get();
+    if (!movingInventoryId) return;
+    queueMovement(movingInventoryId, toLocationId);
+    set({ movingInventoryId: null });
+  },
+
+  queueMovement: (inventoryId, toLocationId) => {
+    const item = get().inventory.find((i) => i.id === inventoryId);
     if (!item) return;
     // Dari staging Receiving atau slot Return ke rack = putaway; antar rack = transfer.
     const fromType = floorSlotById.get(item.locationId)?.type;
     const type = fromType === "STAGING" || fromType === "RETURN" ? "PUTAWAY" : "TRANSFER";
-    set((state) => ({
-      movements: [...state.movements, createPalletMovement(item, type, toLocationId)],
-      movingInventoryId: null,
-    }));
+    set((state) => ({ movements: [...state.movements, createPalletMovement(item, type, toLocationId)] }));
   },
 
   startMovement: (id) => set((state) => ({ movements: setStatus(state.movements, id, "IN_PROGRESS") })),

@@ -11,6 +11,7 @@ import ReturnPanel from "@/components/returns/ReturnPanel";
 import SearchBox from "@/components/search/SearchBox";
 import CameraPresets from "@/components/warehouse/CameraPresets";
 import Sidebar from "@/components/layout/Sidebar";
+import SimulationPanel from "@/components/simulation/SimulationPanel";
 
 export default function Home() {
   return (
@@ -39,6 +40,7 @@ export default function Home() {
             <WarehouseScene />
           </div>
           <div className="absolute top-4 bottom-56 left-4 flex w-64 flex-col gap-3 overflow-y-auto">
+            <SimulationPanel />
             <InboundPanel />
             <ReturnPanel />
             <OutboundPanel />
